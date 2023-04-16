@@ -14,15 +14,19 @@ CONGRESS_TARGET = 'class'
 CONGRESS_ATTRIBUTES = [f'c{n}' for n in range(1, 17)]
 CONGRESS_NAME = 'congress'
 
+WINE_COLS = ["Class", "Alcohol", "Malic acid",
+             "Ash", "Alcalinity of ash",
+             "Magnesium", "Total phenols", "Flavanoids",
+             "Nonflavanoid phenols", "Proanthocyanins",
+             "Color intensity", "Hue", "OD280/OD315 of diluted wines", "Proline"]
+WINE_TARGET = 'Class'
+WINE_ATTRIBUTES = [attr for attr in WINE_COLS if attr != WINE_TARGET]
+WINE_NAME = 'wine'
 
-def get_iris_data(iris_cols) -> pd.DataFrame:
-    return pd.read_csv(os.path.join(os.getcwd(), '..', 'input_data', 'iris.data'),
-                       names=iris_cols)
 
-
-def get_congress_data(congress_cols) -> pd.DataFrame:
-    return pd.read_csv(os.path.join(os.getcwd(), '..', 'input_data', 'congress.data'),
-                       names=congress_cols)
+def get_data(name: str, cols=None) -> pd.DataFrame:
+    return pd.read_csv(os.path.join(os.getcwd(), '..', 'input_data', name),
+                       names=cols)
 
 
 def split_train_test(dataframe: pd.DataFrame, fraction: float = 0.7) -> tuple[pd.DataFrame, pd.DataFrame]:
