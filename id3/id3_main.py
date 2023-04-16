@@ -1,14 +1,11 @@
 """Entrypoint for ID3 algorithm package"""
 from id3_algorithm import TreeManager
-from id3_utils import get_iris_data, get_congress_data, replace_nulls
 
-IRIS_COLS = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'species']
-IRIS_ATTRIBUTES = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
-IRIS_TARGET = 'species'
+from utils import (get_iris_data, get_congress_data, replace_nulls,
+                   IRIS_COLS, IRIS_ATTRIBUTES, IRIS_TARGET,
+                   CONGRESS_COLS, CONGRESS_ATTRIBUTES, CONGRESS_TARGET)
 
-CONGRESS_COLS = ['class', *[f'c{n}' for n in range(1, 17)]]
-CONGRESS_TARGET = 'class'
-CONGRESS_ATTRIBUTES = [f'c{n}' for n in range(1, 17)]
+
 if __name__ == '__main__':
     iris_data = get_iris_data(IRIS_COLS)
     congress_data = replace_nulls(get_congress_data(CONGRESS_COLS), CONGRESS_TARGET)
