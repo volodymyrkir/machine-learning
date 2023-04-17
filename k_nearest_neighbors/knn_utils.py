@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from utils import information_gain_col
+from utils import get_columns_gain
 
 from utils import CONGRESS_ATTRIBUTES
 
@@ -37,7 +37,7 @@ def prepare_categorical(dataframe: pd.DataFrame,
 
 
 def simple_knn(dataframe: pd.DataFrame, target_col: str, k: int, y: pd.Series) -> str:
-    euclidean_distances = np.sqrt(((dataframe.drop(target_col, axis=1) - y) ** 2).sum(axis=1))
+    euclidean_distances = np.sqrt(((dataframe.drop(target_col, axis=1) - y) ** 2).sum(axis=1).astype(float))
     nearest_neighbors = euclidean_distances.nsmallest(k).index
     return (dataframe
     .loc[nearest_neighbors, target_col]
@@ -46,7 +46,7 @@ def simple_knn(dataframe: pd.DataFrame, target_col: str, k: int, y: pd.Series) -
 
 
 def distance_weighted_knn(dataframe: pd.DataFrame, target_col: str, k: int, y: pd.Series) -> str:
-    euclidean_distances = np.sqrt(((dataframe.drop(target_col, axis=1) - y) ** 2).sum(axis=1))
+    euclidean_distances = np.sqrt(((dataframe.drop(target_col, axis=1) - y) ** 2).sum(axis=1).astype(float))
     nearest_neighbors = euclidean_distances.nsmallest(k).index
     target_values = dataframe.loc[nearest_neighbors, target_col]
     weights = 1 / ((euclidean_distances[nearest_neighbors] + 1e-10) ** 2)
@@ -62,20 +62,17 @@ def distance_weighted_knn(dataframe: pd.DataFrame, target_col: str, k: int, y: p
     return max(weighted_sums, key=weighted_sums.get)
 
 
-def attribute_weighted_knn(dataframe: pd.DataFrame, target_col: str, k: int, y: str) -> str:
-    ig_cols = {col: information_gain_col(dataframe, target_col, col)
-               for col in dataframe.columns
-               if col != target_col}
-    max_value = max(ig_cols.values())
-
-    ig_cols_scaled = {key: value / max_value
-                      for key, value in ig_cols.items()}
+def attribute_weighted_knn(dataframe: pd.DataFrame,
+                           target_col: str,
+                           k: int,
+                           y: str,
+                           ig_cols_scaled: dict = None) -> str:
 
     weighted_data = (dataframe
                      .drop(target_col, axis=1)
                      .apply(lambda col: ig_cols_scaled[col.name] * col))
 
-    euclidian_distances = np.sqrt(((weighted_data - y) ** 2).sum(axis=1))
+    euclidian_distances = np.sqrt(((weighted_data - y) ** 2).sum(axis=1).astype(float))
     nearest_neighbors = euclidian_distances.nsmallest(k).index
     return (dataframe
     .loc[nearest_neighbors, target_col]
@@ -83,22 +80,17 @@ def attribute_weighted_knn(dataframe: pd.DataFrame, target_col: str, k: int, y: 
     .loc[0])
 
 
-def combined_weighted_knn(dataframe: pd.DataFrame, target_col: str, k: int, y: pd.Series) -> str:
-    ig_cols = {col: information_gain_col(dataframe, target_col, col)
-               for col in dataframe.columns
-               if col != target_col}
-    max_value = max(ig_cols.values())
-
-    ig_cols_scaled = {key: value / max_value
-                      for key, value in ig_cols.items()}
-
+def combined_weighted_knn(dataframe: pd.DataFrame,
+                          target_col: str, k: int,
+                          y: pd.Series,
+                          ig_cols_scaled: dict = None) -> str:
     weighted_data = dataframe.drop(target_col, axis=1).apply(lambda col: ig_cols_scaled[col.name] * col)
-    euclidean_distances = np.sqrt(((weighted_data - y) ** 2).sum(axis=1))
+    euclidean_distances = np.sqrt(((weighted_data - y) ** 2).sum(axis=1).astype(float))
     inverse_distances = 1 / (euclidean_distances + 1e-10) ** 2
     inverse_distances /= max(inverse_distances)
 
     weighted_data = weighted_data * inverse_distances.values[:, None]
-    euclidean_distances = np.sqrt(((weighted_data - y) ** 2).sum(axis=1))
+    euclidean_distances = np.sqrt(((weighted_data - y) ** 2).sum(axis=1).astype(float))
     nearest_neighbors = euclidean_distances.nsmallest(k).index
     return (dataframe
     .loc[nearest_neighbors, target_col]
