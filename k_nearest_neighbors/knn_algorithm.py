@@ -1,9 +1,13 @@
 from typing import Callable
 
 import pandas as pd
+from matplotlib import pyplot as plt
 
 from utils import split_train_test, get_columns_gain
-from knn_utils import attribute_weighted_knn, combined_weighted_knn
+from knn_utils import attribute_weighted_knn, combined_weighted_knn, distance_weighted_knn, simple_knn
+
+
+pd.set_option('display.max_rows', 500)
 
 
 class KNNManager:
@@ -62,12 +66,13 @@ class KNNManager:
             actual = test.iloc[row][target_col]
             predictions.append(prediction == actual)
 
-        accuracy = round(sum(predictions) / len(test), 3)
+        accuracy = round((sum(predictions) / len(test)) * 100, 2)
 
         print(f'accuracy running {algorithm.__name__} '
               f'for {dataset_name} dataset, '
               f'using {train_fraction * 100}% of data for training, '
-              f'with {neighbors} neighbors is {accuracy}')
+              f'with {neighbors} neighbors is {accuracy}%')
+
         return accuracy
 
     def _collect_results(self):
@@ -75,36 +80,79 @@ class KNNManager:
         for name, values in self._datasets.items():
             results[name] = {}
             for algorithm in self._algorithms:
-                results[name][algorithm] = {}
-                for train in self._train_range:
-                    results[name][algorithm][train] = {}
-                    for k in self._ks:
-                        results[name][algorithm][train][k] = {}
+                results[name][algorithm.__name__] = {}
+                for k in self._ks:
+                    results[name][algorithm.__name__][k] = {}
+                    for train in self._train_range:
+                        results[name][algorithm.__name__][k][train] = {}
 
         for name, values in self._datasets.items():
 
             for algorithm in self._algorithms:
-                for train in self._train_range:
-                    for k in self._ks:
-                        results[name][algorithm][train][k] = (self._predict(algorithm,
-                                                                            k,
-                                                                            train,
-                                                                            name,
-                                                                            *values))
+                for k in self._ks:
+                    for train in self._train_range:
+                        results[name][algorithm.__name__][k][train] = (self._predict(algorithm,
+                                                                                     k,
+                                                                                     train,
+                                                                                     name,
+                                                                                     *values))
         return results
 
-    def plot_results(self, name='iris', algorithm='simple_knn'):
+    def process_results(self):
         results = self._collect_results()
-        # train_values = list(self._train_range)
-        # k_values = list(self._ks)
-        # fig, ax = plt.subplots(len(k_values), len(train_values), figsize=(10, 10))
-        #
-        # for i, k in enumerate(k_values):
-        #     for j, train in enumerate(train_values):
-        #         ax[i, j].plot(train_values, results[name][algorithm][train][k])
-        #         ax[i, j].set_title(f'k = {k}, train = {train}')
-        #         ax[i, j].set_xlabel('Train range')
-        #         ax[i, j].set_ylabel('Accuracy')
-        #
-        # plt.tight_layout()
-        # plt.show()
+        self.plot_train_neighbours('iris', simple_knn.__name__, results)
+        self.plot_train_neighbours('wine', distance_weighted_knn.__name__, results)
+        self.plot_train_neighbours('wine', attribute_weighted_knn.__name__, results)
+        self.plot_train_neighbours('congress', simple_knn.__name__, results)
+        self.plot_train_neighbours('congress', combined_weighted_knn.__name__, results)
+
+        self.plot_train_classifier('iris', 3, results)
+        self.plot_train_classifier('wine', 3, results)
+        self.plot_train_classifier('congress', 3, results)
+
+        return self.get_dataframes(results)
+
+    def plot_train_neighbours(self, name, algorithm, results):
+        train_values = [value * 100 for value in self._train_range]
+
+        for y, style in zip(self._ks, ['-', '--', ':', '-.', (0, (5, 10)), (0, (3, 5, 1, 5))]):
+            plt.plot(train_values, results[name][algorithm][y].values(),
+                     label=f'{y}-Nearest Neighbors', linestyle=style)
+
+        plt.xlabel('Train data size, %')
+        plt.ylabel('Accuracy')
+        plt.title(f'{algorithm} algorithm applied on {name} dataset with different NNs')
+        plt.legend()
+        plt.show()
+
+    def plot_train_classifier(self, name, k, results):
+        train_values = [value * 100 for value in self._train_range]
+
+        for classifier, style in zip(self._algorithms, ['-', '--', ':', '-.']):
+            plt.plot(train_values, results[name][classifier.__name__][k].values(),
+                     label=f'{classifier.__name__}', linestyle=style)
+
+        plt.xlabel('Train data size, %')
+        plt.ylabel('Accuracy')
+        plt.title(f'Classifiers applied on {name} dataset with k=3')
+        plt.legend()
+        plt.show()
+
+    def get_dataframes(self, result: dict):
+        dfs = {}
+        for name, _ in self._datasets.items():
+            rows_list = []
+            for algorithm in result[name]:
+                for k in result[name][algorithm]:
+                    for train in result[name][algorithm][k]:
+                        rows_list.append({
+                            'algorithm': algorithm,
+                            'k': k,
+                            'train': train * 100,
+                            'accuracy': result[name][algorithm][k][train]
+                        })
+            dfs[name] = pd.DataFrame(rows_list)
+
+        for name, df in dfs.items():
+            print(f"Result DataFrame for '{name}':")
+            print(df)

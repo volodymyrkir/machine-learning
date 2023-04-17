@@ -26,4 +26,4 @@ if __name__ == '__main__':
         [1, 3, 5, 7],
         [simple_knn, distance_weighted_knn, attribute_weighted_knn, combined_weighted_knn],
         [float(num) / 10 for num in range(1, 10)])
-    knn_manager.plot_results()
+    knn_manager.process_results()
