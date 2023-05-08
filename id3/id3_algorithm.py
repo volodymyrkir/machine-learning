@@ -1,12 +1,13 @@
 """This module builds a classification tree based on id3 algorithm"""
 import pandas as pd
 
-from id3_utils import discretize_info_gain, discretize_stepwise
+from id3_utils import discretize_stepwise
+
+from utils import discretize_info_gain, shuffle_dataframe
 from utils import get_column_max_gain, split_train_test
 
 
 class TreeManager:
-    train_size = 0.7
 
     def create_tree(self, data, target_col, attributes, discrete=False):
         if discrete == 'info_gain':
@@ -15,7 +16,7 @@ class TreeManager:
         elif discrete == 'stepwise':
             data = discretize_stepwise(data, 1)
             print('Running stepwise discretization')
-        train_data, test_data = split_train_test(data)
+        train_data, test_data = split_train_test(shuffle_dataframe(data))
         return Tree(train_data, target_col, attributes, test_data)
 
 
