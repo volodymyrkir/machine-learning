@@ -23,6 +23,9 @@ WINE_TARGET = 'Class'
 WINE_ATTRIBUTES = [attr for attr in WINE_COLS if attr != WINE_TARGET]
 WINE_NAME = 'wine'
 
+BREAST_TARGET = 'diagnosis'
+BREAST_NAME = 'breast'
+
 
 def get_data(name: str, cols=None) -> pd.DataFrame:
     return pd.read_csv(os.path.join(os.getcwd(), '..', 'input_data', name),
@@ -41,10 +44,13 @@ def split_train_test(dataframe: pd.DataFrame, fraction: float = 0.7) -> tuple[pd
         A tuple containing the train and test DataFrames.
     """
     num_train = int(len(dataframe) * fraction)
-    dataframe = dataframe.sample(len(dataframe))
     train_df = dataframe.iloc[:num_train].copy()
     test_df = dataframe.iloc[num_train:].copy()
     return train_df, test_df
+
+
+def shuffle_dataframe(dataframe: pd.DataFrame) -> pd.DataFrame:
+    return dataframe.sample(len(dataframe))
 
 
 def get_column_max_gain(data_frame: pd.DataFrame, target_col: str, attributes: list[str]) -> str:
@@ -108,3 +114,41 @@ def replace_nulls(data_frame: pd.DataFrame, target_col: str, default_null='?'):
                 (data_frame[target_col] == value), column
             ] = most_common_value
     return data_frame
+
+
+def discretize_info_gain(dataframe: pd.DataFrame, target_col: str) -> pd.DataFrame:
+    """
+    Discretizes all continuous attributes in dataframe based on info gain for each column
+    :param dataframe: target_df
+    :param target_col: target column of dataframe
+    :returns: dataframe with discretized values
+    """
+    dataframe_copy = dataframe.copy()
+    numeric_cols = dataframe_copy.select_dtypes(include=['number']).columns.tolist()
+    numeric_cols = [col for col in numeric_cols if col != target_col]
+    num_bins = len(dataframe[target_col].unique()) - 1
+    total_instances = dataframe_copy.shape[0]
+
+    for col in numeric_cols:
+        df = dataframe_copy[[col, target_col]].copy()
+        df = df.sort_values([col, target_col], ascending=True)
+        thresholds = set(df.loc[df[target_col].ne(df[target_col].shift())][col][1:].tolist())
+        thresholds_mapping = {}
+        if len(thresholds) == num_bins:
+            pass
+        for threshold in thresholds:
+            left, right = df.loc[df[col] <= threshold], df.loc[df[col] > threshold]
+            inf_gain = entropy(df, target_col) - ((len(left) / total_instances) * entropy(left, target_col)
+                                                  + (len(right) / total_instances) * entropy(right, target_col))
+            thresholds_mapping[threshold] = inf_gain
+        best_thresholds = sorted(thresholds_mapping.items(),
+                                 key=lambda x: x[1],
+                                 reverse=True)[:num_bins]
+        prev_threshold = min(df[col])
+        max_threshold = max(df[col])
+        for threshold, _ in best_thresholds:
+            dataframe_copy.loc[(dataframe[col] < threshold) &
+                               (dataframe[col] >= prev_threshold), col] = f'{prev_threshold}-{threshold}'
+            prev_threshold = threshold
+        dataframe_copy.loc[dataframe[col] >= prev_threshold, col] = f'{prev_threshold}-{max_threshold}'
+    return dataframe_copy
