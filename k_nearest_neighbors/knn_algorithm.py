@@ -3,7 +3,7 @@ from typing import Callable
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from utils import split_train_test, get_columns_gain
+from utils import split_train_test, get_columns_gain, shuffle_dataframe
 from knn_utils import attribute_weighted_knn, combined_weighted_knn, distance_weighted_knn, simple_knn
 
 
@@ -56,6 +56,7 @@ class KNNManager:
         :return: accuracy of algorithm
         """
         predictions = []
+        data = shuffle_dataframe(data)
         train, test = split_train_test(data, train_fraction)
         for row in range(len(test)):
             instance = test.iloc[row, attributes_range]

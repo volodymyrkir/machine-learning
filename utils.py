@@ -89,6 +89,31 @@ def entropy(data: pd.DataFrame, target_col: str) -> float:
     return entropy_value
 
 
+def get_columns_gain(df, target_col, non_target_cols):
+    entropy_before = entropy(df, target_col)
+
+    ig_dict = {}
+    for col in non_target_cols:
+        ig_dict[col] = entropy_before - calculate_weighted_entropy(df, col, target_col)
+
+    return ig_dict
+
+
+def calculate_weighted_entropy(df, col, target_col):
+    total_count = df.shape[0]
+
+    value_counts = df[col].value_counts(normalize=True)
+    probabilities = value_counts.to_dict()
+
+    entropy_list = []
+    for value in df[col].unique():
+        subset = df[df[col] == value]
+        val = entropy(subset, target_col)
+        entropy_list.append(probabilities[value] * val)
+
+    return sum(entropy_list) * total_count / df.shape[0]
+
+
 def information_gain_col(data: pd.DataFrame, target_col: str, feature_col: str) -> float:
     total_entropy = entropy(data, target_col)
     feature_values = data[feature_col].unique()
