@@ -49,6 +49,29 @@ def split_train_test(dataframe: pd.DataFrame, fraction: float = 0.7) -> tuple[pd
     return train_df, test_df
 
 
+def split_train_validation_test(dataframe: pd.DataFrame,
+                                fraction_train: float = 0.7,
+                                fraction_validation: float = 0.15) -> tuple:
+    """
+    Splits a Pandas DataFrame into train and test sets.
+
+    Args:
+        dataframe: The Pandas DataFrame to split.
+        fraction_train: The fraction of the data to use for the train set.
+        fraction_validation: The fraction of the data to use for the validation set.
+
+    Returns:
+        A tuple containing the train and test DataFrames.
+    """
+    num_train = int(len(dataframe) * fraction_train)
+    num_validate = int(len(dataframe) * (fraction_train + fraction_validation))
+
+    train_df = dataframe.iloc[:num_train].copy()
+    validate_df = dataframe.iloc[num_train:num_validate].copy()
+    test_df = dataframe.iloc[num_validate:].copy()
+    return train_df, validate_df, test_df
+
+
 def shuffle_dataframe(dataframe: pd.DataFrame) -> pd.DataFrame:
     return dataframe.sample(len(dataframe))
 
