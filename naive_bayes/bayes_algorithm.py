@@ -84,6 +84,3 @@ class NaiveBayesManager:
                 correct += 1
         return 0 if correct == 0 else round(correct/total, 3)
 
-    def test_func(self):
-        for target, data in self._datasets.items():
-            print(data)

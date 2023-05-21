@@ -5,8 +5,7 @@ from utils import IRIS_COLS, IRIS_ATTRIBUTES, IRIS_NAME, IRIS_TARGET
 from utils import CONGRESS_TARGET, CONGRESS_COLS, CONGRESS_NAME
 from utils import WINE_TARGET, WINE_COLS, WINE_NAME, WINE_ATTRIBUTES
 from k_nearest_neighbors.knn_utils import prepare_categorical, prepare_numeric
-from k_nearest_neighbors.knn_utils import (simple_knn, distance_weighted_knn,
-                                           attribute_weighted_knn, combined_weighted_knn)
+
 
 if __name__ == '__main__':
     iris_data = get_data('iris.data', IRIS_COLS)
